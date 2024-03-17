@@ -1,0 +1,65 @@
+server:
+  tomcat:
+    uri-encoding: UTF-8   # url编码
+    max-swallow-size: -1  # tomcat默认大小2M, 超过2M的文件不会被捕获, 需要调整此处大小为100MB或者-1即可
+
+spring:
+  profiles:
+    active: dev   # 多环境配置
+  servlet:
+    multipart:
+      max-file-size: 2MB        # 文件上传大小限制, 设置最大值, 不能超过该值, 否则报错
+      max-request-size: 2MB     # 文件最大请求限制, 用于批量上传
+  main:
+    banner-mode: off
+
+# 整合mybatis-plus
+mybatis-plus:
+  type-aliases-package: com.tiktok.pojo       # 所有pojo类所在的包路径
+  mapper-locations: classpath:mapper/*.xml    # mapper映射文件
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: off
+
+# 分页插件助手的配置
+pagehelper:
+  helper-dialect: MYSQL
+  support-methods-arguments: true
+
+# 日志配置
+logging:
+  level:
+    com.tiktok.mapper: debug   # 级别
+
+# springdoc配置, localhost:post/doc.html
+springdoc:
+  swagger-ui:
+    path: /swagger-ui # springdoc的ui地址
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs  # api-docs的访问地址
+  packages-to-scan: com.tiktok.controller   # 扫描的controller包
+  group-configs:    # 分组设置
+    - group: passport
+      paths-to-match: /passport/*
+    - group: userInfo
+      paths-to-match: /userInfo/*
+    - group: vlog
+      paths-to-match: /vlog/*
+    - group: fans
+      paths-to-match: /fans/*
+    - group: comment
+      paths-to-match: /comment/*
+
+# knife4j配置
+knife4j:
+  config:
+    infoTitle: Tiktok API
+    infoDescription: 简单的短视频应用
+    infoContactName: lzc
+    infoContactEmail: 2468750283@qq.com
+    version: v1.0.0
+    licenseName: Apache 2.0
+    licenseUrl: http://springdoc.org

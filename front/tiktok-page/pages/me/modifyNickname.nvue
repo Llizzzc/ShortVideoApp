@@ -1,0 +1,183 @@
+<template>
+  <view class="page">
+    <view class="line"></view>
+    <view class="single-line-box">
+      <input
+        class="nickname-input"
+        type="text"
+        :value="nickname"
+        :model="nickname"
+        placeholder="请填入昵称~"
+        maxlength="16"
+        @input="typingContent" />
+      <view class="length-cal">
+        <text class="length-text">{{ wordsLength }}/16</text>
+      </view>
+    </view>
+
+    <view class="notice" style="align-self: center">
+      <text class="tips">*注：请设置5-16的昵称长度</text>
+    </view>
+  </view>
+</template>
+
+<script>
+let app = getApp();
+export default {
+  data() {
+    return {
+      oldNickname: app.getUserInfoSession().nickname,
+      nickname: app.getUserInfoSession().nickname,
+      wordsLength: 0,
+    };
+  },
+  onNavigationBarButtonTap() {
+    let nickname = this.nickname;
+    if (nickname.length < 5) {
+      uni.showToast({
+        icon: "none",
+        title: "昵称太短!",
+      });
+      return;
+    }
+
+    if (nickname.search(/\s/) != -1) {
+      uni.showToast({
+        icon: "none",
+        title: "不允许包含空串!",
+      });
+      return;
+    }
+
+    let oldNickname = this.oldNickname;
+    if (oldNickname == nickname) {
+      uni.showToast({
+        icon: "none",
+        title: "昵称未改变!",
+      });
+      return;
+    }
+    this.updateNickname();
+  },
+  onShow() {
+    this.wordsLength = this.nickname.length;
+  },
+  methods: {
+    updateNickname() {
+      let me = this;
+      let userId = getApp().getUserInfoSession().id;
+      let nickname = this.nickname;
+      let pendingUserInfo = {
+        id: userId,
+        nickname: nickname,
+      };
+
+      // 修改昵称
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url: serverUrl + "/userInfo/modifyUserInfo?type=1",
+        data: pendingUserInfo,
+        success(result) {
+          if (result.data.status == 212) {
+            let userInfoUpdated = result.data.data;
+            // 重置本地用户信息
+            app.setUserInfoSession(userInfoUpdated);
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+            setTimeout(() => {
+              uni.navigateBack({
+                delta: 1,
+                animationType: "fade-out",
+              });
+            }, 1000);
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+    typingContent(e) {
+      this.nickname = e.detail.value;
+      this.wordsLength = this.nickname.length;
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  .line {
+    height: 1rpx;
+    background-color: #393a41;
+    width: 750rpx;
+  }
+
+  .single-line-box {
+    align-self: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 30rpx;
+    margin-top: 20rpx;
+    .nickname-input {
+      padding-left: 20rpx;
+      color: #ffffff;
+      font-size: 28rpx;
+      width: 600rpx;
+      height: 100rpx;
+      background-color: #4a4c52;
+      border-top-left-radius: 20rpx;
+      border-bottom-left-radius: 20rpx;
+    }
+    .length-cal {
+      width: 100rpx;
+      height: 100rpx;
+      background-color: #4a4c52;
+      padding-right: 20rpx;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-bottom: 12rpx;
+      border-top-right-radius: 20rpx;
+      border-bottom-right-radius: 20rpx;
+      .length-text {
+        font-size: 24rpx;
+        font-weight: 400;
+        color: #f1f1f1;
+      }
+    }
+  }
+
+  .notice {
+    align-self: center;
+    .tips {
+      font-size: 24rpx;
+      font-weight: 400;
+      color: #bfbfbf;
+      width: 700rpx;
+    }
+  }
+}
+</style>

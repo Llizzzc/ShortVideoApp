@@ -1,0 +1,260 @@
+<template>
+  <view class="page">
+    <view :style="{ height: statusBarHeight + 'px' }">
+      <!-- 这里是状态栏, 每个页面都需要有, 目的不让页面覆盖状态栏 -->
+    </view>
+    <view class="big-search-wrapper">
+      <image
+        class="header-right-search icon-search"
+        src="/static/images/icon-back.png"
+        @click="back" />
+      <view class="search-box">
+        <view class="search-box-left">
+          <image
+            class="header-right-search search-image"
+            src="/static/images/icon-search.png" />
+        </view>
+        <input
+          type="text"
+          :model="searchContent"
+          :value="searchContent"
+          @input="typingContent"
+          placeholder="请输入内容~"
+          maxlength="10"
+          class="search-input" />
+      </view>
+      <view class="btn" @click="doSearch">
+        <text class="search-btn">搜索</text>
+      </view>
+    </view>
+
+    <view class="waterfall-wrapper" :style="{ height: screenHeight + 'px' }">
+      <waterfall
+        :style="{ height: screenHeight + 'px' }"
+        column-count="2"
+        column-width="auto"
+        column-gap="2rpx"
+        left-gap="4rpx"
+        right-gap="4rpx">
+        <cell v-for="(vlog, index) in waterList" :key="index">
+          <view class="every-single-video" @appear="appearVlog(index)">
+            <image
+              :src="vlog.cover"
+              mode="aspectFill"
+              class="half-cover"
+              @click="goToVlog(vlog.vlogId)" />
+          </view>
+        </cell>
+      </waterfall>
+    </view>
+  </view>
+</template>
+
+<script>
+let system = uni.getSystemInfoSync();
+let app = getApp();
+export default {
+  data() {
+    return {
+      screenHeight: 0,
+      statusBarHeight: 0,
+      waterList: [],
+      page: 0,
+      totalPage: 0,
+      search: "",
+      searchContent: "",
+    };
+  },
+  onLoad(params) {
+    uni.showLoading({
+      title: "正在获取!",
+    });
+    this.statusBarHeight = system.statusBarHeight;
+    let screenHeight = system.safeArea.bottom;
+    this.screenHeight = screenHeight;
+	this.searchContent = params.search
+    // 搜索的关键字
+    let search = params.search;
+    this.search = search;
+    this.fetchList(0);
+  },
+  onShow() {},
+  methods: {
+    doSearch() {
+      let me = this;
+      let searchContent = this.searchContent;
+      if (getApp().isStrEmpty(searchContent)) {
+        uni.showToast({
+          title: "搜索为空!",
+          icon: "none",
+          duration: 2000,
+        });
+        this.searchContent = "";
+        return;
+      }
+
+      uni.navigateTo({
+        url: "searchList?search=" + searchContent,
+      });
+    },
+    typingContent(e) {
+      this.searchContent = e.detail.value;
+    },
+    back() {
+      uni.navigateBack({
+        delta: 1,
+      });
+    },
+    loadMore() {
+      if (this.page >= this.totalPage) {
+        return;
+      } else {
+        this.fetchList(this.page);
+      }
+    },
+    fetchList(page) {
+      let me = this;
+      page = page + 1;
+      let search = me.search;
+      let userInfo = getApp().getUserInfoSession();
+      let userId = "";
+      if (!app.isStrEmpty(userInfo)) {
+        userId = userInfo.id;
+      }
+
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "GET",
+        url:
+          serverUrl +
+          "/vlog/indexList?userId=" +
+          userId +
+          "&search=" +
+          search +
+          "&page=" +
+          page +
+          "&pageSize=10",
+        success(result) {
+          if (result.data.status == 206) {
+            uni.hideLoading();
+            let waterList = result.data.data.rows;
+            let totalPage = result.data.data.total;
+            me.waterList = waterList;
+            me.page = page;
+            me.totalPage = totalPage;
+            if (
+              waterList == null ||
+              waterList == undefined ||
+              waterList.length == 0
+            ) {
+              uni.showToast({
+                title: "没有结果~",
+                icon: "none",
+                duration: 2000,
+              });
+              setTimeout(() => {
+                uni.navigateBack({
+                  delta: 1,
+                });
+              }, 1000);
+            }
+          }
+        },
+      });
+    },
+
+    goToVlog(vlogId) {
+      uni.navigateTo({
+        url: "../vlog/vlog?vlogId=" + vlogId,
+      });
+    },
+
+    // 每个vlog出现都会触发
+    appearVlog(index, e) {
+      let me = this;
+      // 如果最后一个vlog出现, 则加载更多
+      if (index == me.waterList.length - 1) {
+        me.loadMore();
+      }
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+
+  .big-search-wrapper {
+    padding: 30rpx;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    .header-right-search {
+      height: 100rpx;
+    }
+    .icon-search {
+      width: 40rpx;
+      height: 40rpx;
+      opacity: 0.8;
+      align-self: center;
+    }
+    .search-box {
+      display: flex;
+      flex-direction: row;
+      .search-box-left {
+        padding: 0 10rpx;
+        display: flex;
+        flex-direction: row;
+        background-color: #55565e;
+        border-top-left-radius: 6rpx;
+        border-bottom-left-radius: 6rpx;
+        .search-image {
+          width: 50rpx;
+          height: 50rpx;
+          opacity: 0.8;
+          align-self: center;
+        }
+      }
+    }
+    .search-input {
+      width: 440rpx;
+      background-color: #55565e;
+      height: 60rpx;
+      font-size: 28rpx;
+      color: #ffffff;
+      border-top-right-radius: 6rpx;
+      border-bottom-right-radius: 6rpx;
+    }
+    .btn {
+      align-self: center;
+      .search-btn {
+        color: #ffffff;
+        font-size: 32rpx;
+        align-self: center;
+      }
+    }
+  }
+
+  .waterfall-wrapper {
+    background-color: #181b27;
+    .every-single-video {
+      display: flex;
+      flex-direction: column;
+      margin-top: 10rpx;
+      .half-cover {
+        background-color: #000000;
+        height: 600rpx;
+        width: 365rpx;
+        border-top-left-radius: 10rpx;
+        border-top-right-radius: 10rpx;
+      }
+    }
+  }
+}
+</style>

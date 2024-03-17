@@ -1,0 +1,158 @@
+<template>
+  <view class="page">
+    <view class="bg-wrapper" :style="{ height: screenHeight + 'px' }">
+      <image :src="faceUrl" class="bg-size" mode="aspectFill"></image>
+      <view
+        class="btn"
+        :class="{
+          'button-change-bg': !changeTouched,
+          'button-change-bg-touched': changeTouched,
+        }"
+        @touchstart="touchstartChange"
+        @touchend="touchendChange"
+        @click="changeFace">
+        <text class="btn-text">更换头像</text>
+      </view>
+      <view
+        class="btn"
+        :class="{
+          'button-change-bg': !closeTouched,
+          'button-change-bg-touched': closeTouched,
+        }"
+        @touchstart="touchstartClose"
+        @touchend="touchendClose"
+        @click="close"
+        style="margin-top: 10rpx">
+        <text class="btn-text">返回</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+let system = uni.getSystemInfoSync();
+let app = getApp();
+export default {
+  data() {
+    return {
+      faceUrl: getApp().getUserInfoSession().face,
+      changeTouched: false,
+      closeTouched: false,
+      screenHeight: system.safeArea.bottom,
+    };
+  },
+  methods: {
+    close() {
+      uni.navigateBack({
+        delta: 1,
+        animationType: "slide-out-bottom",
+      });
+    },
+    touchstartChange() {
+      this.changeTouched = true;
+    },
+    touchendChange() {
+      this.changeTouched = false;
+    },
+    touchstartClose() {
+      this.closeTouched = true;
+    },
+    touchendClose() {
+      this.closeTouched = false;
+    },
+    changeFace() {
+      let me = this;
+      let userId = getApp().getUserInfoSession().id;
+      uni.chooseImage({
+        count: 1,
+        sizeType: ["original"],
+        crop: {
+          quality: 100,
+          width: 400,
+          height: 400,
+        },
+        success: (e) => {
+          let newFace = e.tempFilePaths[0];
+          me.faceUrl = newFace;
+          // 上传
+          let serverUrl = app.globalData.serverUrl;
+          uni.uploadFile({
+            header: {
+              headerUserId: userId,
+              headerUserToken: app.getUserSessionToken(),
+            },
+            url:
+              serverUrl + "/userInfo/modifyImage?userId=" + userId + "&type=2",
+            name: "file",
+            filePath: newFace,
+            success(result) {
+              let userInfoUpdated = JSON.parse(result.data);
+              if (userInfoUpdated.status == 212) {
+                // 重置本地用户信息
+                app.setUserInfoSession(userInfoUpdated.data);
+                uni.showToast({
+                  title: userInfoUpdated.msg,
+                  icon: "none",
+                  duration: 3000,
+                });
+                setTimeout(() => {
+                  uni.navigateBack({
+                    delta: 1,
+                    animationType: "fade-out",
+                  });
+                }, 1000);
+              } else {
+                uni.showToast({
+                  title: userInfoUpdated.msg,
+                  icon: "none",
+                });
+              }
+            },
+          });
+        },
+      });
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #000000;
+  .bg-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    .bg-size {
+      align-self: center;
+      width: 750rpx;
+      height: 750rpx;
+    }
+    .btn {
+      width: 250rpx;
+      height: 80rpx;
+      border-radius: 100rpx;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-top: 150rpx;
+      align-self: center;
+      .btn-text {
+        color: #ffffff;
+        align-self: center;
+      }
+    }
+    .button-change-bg {
+      background-color: #1e1e1e;
+    }
+    .button-change-bg-touched {
+      background-color: #646262;
+    }
+  }
+}
+</style>

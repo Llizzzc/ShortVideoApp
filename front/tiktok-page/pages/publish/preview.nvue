@@ -1,0 +1,55 @@
+<template>
+  <view class="page">
+    <video
+      class="video"
+      :style="{ height: screenSafeHeight + 'px' }"
+      :src="videoUrl"
+      autoplay="true"
+      controls="true"
+      :object-fit="objectFit"></video>
+  </view>
+</template>
+
+<script>
+let system = uni.getSystemInfoSync();
+export default {
+  data() {
+    return {
+      videoUrl: "",
+      objectFit: "fill",
+      screenSafeHeight: system.safeArea.bottom,
+    };
+  },
+  onLoad(params) {
+    let me = this;
+    let videoUrl = params.videoUrl;
+    this.videoUrl = videoUrl;
+    let width = parseInt(params.width);
+    let height = parseInt(params.height);
+    this.width = width;
+    this.height = height;
+
+    if (width >= height) {
+      me.objectFit = "contain";
+    } else {
+      me.objectFit = "fill";
+    }
+  },
+  methods: {},
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+
+  .video {
+    width: 750rpx;
+  }
+}
+</style>

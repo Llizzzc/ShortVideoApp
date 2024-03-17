@@ -1,0 +1,228 @@
+<template>
+  <view class="page">
+    <view class="line"></view>
+    <view class="sex-box">
+      <view
+        class="item"
+        :class="{ 'sex-item': !boyTouched, 'sex-item-touched': boyTouched }"
+        @click="switchSex(1)"
+        @touchstart="touchstartBoy"
+        @touchend="touchendBoy"
+		style="border-top-left-radius: 40rpx; border-top-right-radius: 40rpx;">
+        <view class="left-sex-part">
+          <text class="left-sex">男</text>
+        </view>
+        <view class="left-choose">
+          <image
+            v-if="sex == 1"
+            src="/static/images/icon-right.png"
+            class="rightIcon"></image>
+        </view>
+      </view>
+      <view class="line" style="align-self: center"></view>
+      <view
+        class="item"
+        :class="{ 'sex-item': !girlTouched, 'sex-item-touched': girlTouched }"
+        @click="switchSex(0)"
+        @touchstart="touchstartGirl"
+        @touchend="touchendGirl">
+        <view class="left-sex-part">
+          <text class="left-sex">女</text>
+        </view>
+        <view class="left-choose">
+          <image
+            v-if="sex == 0"
+            src="/static/images/icon-right.png"
+            class="rightIcon"></image>
+        </view>
+      </view>
+      <view class="line" style="align-self: center"></view>
+      <view
+        class="item"
+        :class="{
+          'sex-item': !secretTouched,
+          'sex-item-touched': secretTouched,
+        }"
+        @click="switchSex(2)"
+        @touchstart="touchstartSecret"
+        @touchend="touchendSecret"
+		style="border-bottom-left-radius: 40rpx; border-bottom-right-radius: 40rpx;">
+        <view class="left-sex-part">
+          <text class="left-sex">保密</text>
+        </view>
+
+        <view class="left-choose">
+          <image
+            v-if="sex == 2"
+            src="/static/images/icon-right.png"
+            class="rightIcon"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+let app = getApp();
+export default {
+  data() {
+    return {
+      sex: app.getUserInfoSession().sex,
+      boyTouched: false,
+      girlTouched: false,
+      secretTouched: false,
+    };
+  },
+  onNavigationBarButtonTap() {
+    this.updateSex();
+  },
+  methods: {
+    updateSex() {
+      let me = this;
+      let userId = app.getUserInfoSession().id;
+      let sex = this.sex;
+      let pendingUserInfo = {
+        id: userId,
+        sex: sex,
+      };
+
+      // 修改昵称
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url: serverUrl + "/userInfo/modifyUserInfo?type=3",
+        data: pendingUserInfo,
+        success(result) {
+          if (result.data.status == 212) {
+            let userInfoUpdated = result.data.data;
+            // 重置本地用户信息
+            app.setUserInfoSession(userInfoUpdated);
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+            setTimeout(() => {
+              uni.navigateBack({
+                delta: 1,
+                animationType: "fade-out",
+              });
+            }, 1000);
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+
+    switchSex(sex) {
+      this.sex = sex;
+    },
+
+    touchstartBoy() {
+      this.boyTouched = true;
+    },
+    touchendBoy() {
+      this.boyTouched = false;
+    },
+    touchstartGirl() {
+      this.girlTouched = true;
+    },
+    touchendGirl() {
+      this.girlTouched = false;
+    },
+    touchstartSecret() {
+      this.secretTouched = true;
+    },
+    touchendSecret() {
+      this.secretTouched = false;
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+  dispaly: flex;
+  flex-direction: column;
+
+  .line {
+    height: 1rpx;
+    background-color: #393a41;
+    width: 750rpx;
+  }
+
+  .sex-box {
+    align-self: center;
+    width: 680rpx;
+    height: 400rpx;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-top: 30rpx;
+    background-color: #4a4c52;
+    border-radius: 40rpx;
+    .item {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-self: center;
+      .left-sex-part {
+        width: 580rpx;
+        height: 120rpx;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        .left-sex {
+          align-self: center;
+          margin-left: 30rpx;
+          color: #ffffff;
+        }
+      }
+
+      .left-choose {
+        width: 100rpx;
+        height: 120rpx;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        .rightIcon {
+          align-self: center;
+          width: 60rpx;
+          height: 60rpx;
+        }
+      }
+    }
+
+    .line {
+      width: 680rpx;
+      background-color: #393a41;
+      height: 1rpx;
+    }
+
+    .sex-item {
+      background-color: #4a4c52;
+      height: 140rpx;
+    }
+
+    .sex-item-touched {
+      background-color: #6d6b6b;
+      height: 140rpx;
+    }
+  }
+}
+</style>

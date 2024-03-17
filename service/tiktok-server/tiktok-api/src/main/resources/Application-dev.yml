@@ -1,0 +1,44 @@
+server:
+  port: 8099
+
+spring:
+  datasource:                                     # 数据源的相关配置
+    type: com.zaxxer.hikari.HikariDataSource      # 数据源的类型
+    driver-class-name: com.mysql.cj.jdbc.Driver      # mysql8.0驱动
+    url: jdbc:mysql://*******/tiktok?characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true
+    username:
+    password:
+    hikari:
+      connection-timeout: 30000               # 等待连接池分配连接的最大时间(毫秒), 超过这个时长还没有可用的连接, 则会抛出SQLException
+      minimum-idle: 5                         # 最小连接数
+      maximum-pool-size: 20                   # 最大连接数
+      auto-commit: true                       # 自动提交
+      idle-timeout: 600000                    # 连接超时的最大时长(毫秒), 超时则会被释放(retired)
+      pool-name: DataSourceHikariCP           # 连接池的名字
+      max-lifetime: 18000000                  # 连接池的最大生命时长(毫秒), 超时则会被释放(retired)
+      connection-test-query: SELECT 1
+  redis:
+    host:
+    port:
+    password:
+    database: 0        # 使用的数据库编号
+    jedis:
+      pool:
+        max-idle: 6     # 最大空闲连接
+        max-active: 32  # 连接池最大连接数
+        max-wait: 100   # 连接池最大阻塞等待时间, -1表示没有限制
+        min-idle: 4     # 最小空闲连接
+    timeout: 5000
+  data:
+    mongodb:
+      uri:
+      database:
+
+minio:
+  endpoint:      # 服务地址
+  fileHost:      # 文件地址host
+  bucketName:    # 存储桶bucket名称
+  accessKey:     # 用户名
+  secretKey:     # 密码
+  imgSize: 1024                           # 图片大小限制, 单位：m
+  fileSize: 1024                          # 文件大小限制, 单位：m

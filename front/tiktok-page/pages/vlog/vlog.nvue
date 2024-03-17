@@ -1,0 +1,87 @@
+<template>
+  <view class="page">
+    <swiper style="my-swiper" :style="{ height: screenHeight + 'px' }">
+      <swiper-item>
+        <video-detail
+          :screenHeight="screenHeight"
+          :playStatus="playStatus"
+          :vlogId="vlogId"></video-detail>
+      </swiper-item>
+    </swiper>
+    <view class="header" :style="{ marginTop: statusBarHeight + 'px' }">
+      <image
+        class="header-left"
+        src="../../static/images/icon-back.png"
+        @click="back()" />
+    </view>
+  </view>
+</template>
+
+<script>
+let system = uni.getSystemInfoSync();
+import videoDetail from "@/components/videoDetail.vue";
+export default {
+  components: {
+    videoDetail,
+  },
+  data() {
+    return {
+      vlogId: "",
+      playStatus: true,
+      screenHeight: 0,
+      statusBarHeight: 0,
+    };
+  },
+  onLoad(option) {
+    this.statusBarHeight = system.statusBarHeight;
+    let screenHeight = system.safeArea.bottom + 50;
+    this.screenHeight = screenHeight;
+
+    // 获得参数
+    let vlogId = option.vlogId;
+    this.vlogId = vlogId;
+  },
+  onHide() {
+    // TODO 隐藏的时候暂停播放
+  },
+  methods: {
+    back() {
+      uni.navigateBack({
+        delta: 1,
+      });
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #000000;
+  .header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    height: 100rpx;
+    line-height: 100rpx;
+    align-items: center;
+    padding-left: 40rpx;
+    padding-right: 40rpx;
+    .header-left {
+      color: #999;
+      line-height: 100rpx;
+      align-items: flex-start;
+      justify-content: flex-end;
+      font-family: iconfont;
+      width: 40rpx;
+      height: 40rpx;
+      opacity: 0.8;
+    }
+  }
+}
+</style>

@@ -1,0 +1,267 @@
+<template>
+  <view class="page">
+    <view class="line"></view>
+    <scroll-view scroll-y="true" @scrolltolower="pagingFollowsList">
+      <view class="user-wrapper" v-for="(f, index) in followsList" :key="index">
+        <view class="user-info" @click="goTovlogerInfo(f.vlogerId)">
+          <image class="face" :src="f.face" />
+          <text class="user-name">
+            {{ f.nickname }}
+          </text>
+        </view>
+
+        <view v-if="isLogin && f.me" class="operator-wrapper">
+          <text class="operator-words" style="color: #ffffff">你</text>
+        </view>
+        <view v-else-if="!isLogin || isLogin && !f.follow" class="operator-wrapper">
+          <text
+            class="operator-words"
+            style="color: #ffffff"
+            @click="followMe(f.vlogerId)">
+            关注
+          </text>
+        </view>
+        <view v-else-if="isLogin && f.follow && !f.fan" class="operator-wrapper">
+          <text
+            class="operator-words"
+            style="color: #ef274d"
+            @click="cancelFollow(f.vlogerId)">
+            已关注
+          </text>
+        </view>
+        <view v-else-if="isLogin && f.follow && f.fan" class="operator-wrapper">
+          <text
+            class="operator-words"
+            style="color: #ef274d"
+            @click="cancelFollow(f.vlogerId)">
+            互关
+          </text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script>
+let system = uni.getSystemInfoSync();
+const app = getApp();
+export default {
+  data() {
+    return {
+      isLogin: false,
+      userId: "",
+	  currentUserId: "",
+      screenHeight: 0,
+      page: 0,
+      totalPage: 0,
+      followsList: [],
+    };
+  },
+  onLoad(param) {
+    if (!app.isStrEmpty(app.getUserInfoSession())) {
+      this.isLogin = true;
+	  this.currentUserId = app.getUserInfoSession().id
+    }
+    this.userId = param.userId;
+    this.queryMyFollowList(0);
+  },
+  methods: {
+    goTovlogerInfo(vlogerId) {
+      // 是否是当前登录的用户
+      if (this.currentUserId == vlogerId) {
+        uni.switchTab({
+          url: "me",
+        });
+      } else {
+        uni.navigateTo({
+          url: "vlogerInfo?userPageId=" + vlogerId,
+        });
+      }
+    },
+    // 关注, 取关后的list重新状态刷新设置
+    reFreshList(vlogerId, status) {
+      let me = this;
+      let followsList = me.followsList;
+      for (let i = 0; i < followsList.length; i++) {
+        let vloger = followsList[i];
+        if (vloger.vlogerId == vlogerId) {
+          vloger.follow = status;
+          followsList.splice(i, 1, vloger);
+        }
+      }
+      me.followsList = followsList;
+    },
+    cancelFollow(vlogerId) {
+      let me = this;
+      let userId = this.currentUserId;
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url:
+          serverUrl + "/fans/cancel?myId=" + userId + "&vlogerId=" + vlogerId,
+        success(result) {
+          if (result.data.status == 209) {
+            me.reFreshList(vlogerId, false);
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+    followMe(vlogerId) {
+      let me = this;
+      if (app.isStrEmpty(this.currentUserId)) {
+        uni.showToast({
+          duration: 3000,
+          title: "请登录后再进行操作~",
+          icon: "none",
+        });
+
+        uni.switchTab({
+          url: "me",
+        });
+
+        uni.navigateTo({
+          url: "../loginRegist/loginRegist",
+          animationType: "slide-in-bottom",
+          success() {
+            me.loginWords = "请登录";
+          },
+        });
+      }
+      let userId = this.currentUserId;
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url:
+          serverUrl + "/fans/follow?myId=" + userId + "&vlogerId=" + vlogerId,
+        success(result) {
+          if (result.data.status == 208) {
+            me.reFreshList(vlogerId, true);
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+    queryMyFollowList(page) {
+      let me = this;
+      page = page + 1;
+      let userId = me.userId;
+	  let currentUserId = this.currentUserId;
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "GET",
+        url:
+          serverUrl +
+          "/fans/queryMyFollows?vlogerId=" +
+          userId +
+		  "&currentUserId=" + 
+		  currentUserId + 
+          "&page=" +
+          page +
+          "&pageSize=10",
+        success(result) {
+          if (result.data.status == 2091) {
+            let followsList = result.data.data.rows;
+            let totalPage = result.data.data.total;
+            me.followsList = me.followsList.concat(followsList);
+            me.page = page;
+            me.totalPage = totalPage;
+          }
+        },
+      });
+    },
+
+    // 上滑分页粉丝列表
+    pagingFollowsList() {
+      if (this.page >= this.totalPage) {
+        return;
+      }
+      this.queryMyFollowList(this.page);
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+
+  .line {
+    height: 1rpx;
+    background-color: #393a41;
+    width: 750rpx;
+  }
+
+  .user-wrapper {
+    padding-left: 30rpx;
+    padding-right: 30rpx;
+    width: 750rpx;
+    height: 120rpx;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 20rpx;
+    margin-bottom: 20rpx;
+    .user-info {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      .face {
+        align-self: center;
+        width: 110rpx;
+        height: 110rpx;
+        border-radius: 100rpx;
+        border-width: 2rpx;
+        border-color: #f1f1f1;
+      }
+      .user-name {
+        align-self: center;
+        color: #ffffff;
+        font-size: 30rpx;
+        margin-left: 20rpx;
+      }
+    }
+
+    .operator-wrapper {
+      width: 140rpx;
+      height: 60rpx;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      background-color: #ef274d;
+      border-radius: 20rpx;
+      align-self: center;
+      border-width: 2rpx;
+      border-color: #ef274d;
+      background-color: #181b27;
+      .operator-words {
+        align-self: center;
+        font-size: 28rpx;
+      }
+    }
+  }
+}
+</style>

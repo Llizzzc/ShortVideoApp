@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 父工程必须为pom, 且没有src目录  -->
+    <groupId>com.tiktok</groupId>
+    <artifactId>tiktok-server</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <!-- 模块管理 -->
+    <modules>
+        <module>tiktok-common</module>
+        <module>tiktok-api</module>
+        <module>tiktok-mapper</module>
+        <module>tiktok-model</module>
+        <module>tiktok-service</module>
+    </modules>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.5.4</version>
+        <relativePath />
+    </parent>
+
+    <!-- 依赖版本管理  -->
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+        <mysql-connector-java.version>8.0.30</mysql-connector-java.version>
+        <mybatis-plus-boot-starter.version>3.5.1</mybatis-plus-boot-starter.version>
+        <pagehelper-spring-boot-starter.version>1.2.12</pagehelper-spring-boot-starter.version>
+        <okhttp.version>4.2.2</okhttp.version>
+        <jackson.version>2.10.2</jackson.version>
+        <commons-codec.version>1.11</commons-codec.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <commons-fileupload.version>1.4</commons-fileupload.version>
+        <google-guava.version>28.2-jre</google-guava.version>
+        <joda-time.version>2.10.6</joda-time.version>
+        <knife4j-openapi3-spring-boot-starter.version>4.1.0</knife4j-openapi3-spring-boot-starter.version>
+        <minio.version>8.2.1</minio.version>
+        <tencentcloud-sdk-java.version>3.1.270</tencentcloud-sdk-java.version>
+        <java-jwt.version>4.4.0</java-jwt.version>
+    </properties>
+
+    <!--
+       使用dependencyManagement的目的是为了保证父工程的干净,
+       也就是说父工程他只负责管理依赖, 以及依赖的版本, 而不会导入额外的jar依赖.
+       如此一来父工程的职责就很单一了, 而且也符合了面向对象开发的父子继承关系,
+       依赖的导入只有在各自的子工程中才会进行导入.
+   -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- mysql -->
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-connector-java.version}</version>
+            </dependency>
+            <!-- mybatis-plus -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <version>${mybatis-plus-boot-starter.version}</version>
+            </dependency>
+            <!--pageHelper -->
+            <dependency>
+                <groupId>com.github.pagehelper</groupId>
+                <artifactId>pagehelper-spring-boot-starter</artifactId>
+                <version>${pagehelper-spring-boot-starter.version}</version>
+            </dependency>
+            <!-- okhttp  -->
+            <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp.version}</version>
+            </dependency>
+            <!-- jackson -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <!-- apache -->
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-fileupload</groupId>
+                <artifactId>commons-fileupload</artifactId>
+                <version>${commons-fileupload.version}</version>
+            </dependency>
+            <!-- google -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${google-guava.version}</version>
+            </dependency>
+            <!-- joda-time -->
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${joda-time.version}</version>
+            </dependency>
+            <!-- knife4j -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-spring-boot-starter</artifactId>
+                <version>${knife4j-openapi3-spring-boot-starter.version}</version>
+            </dependency>
+            <!-- minio -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
+            <!-- tencentCloudApi -->
+            <dependency>
+                <groupId>com.tencentcloudapi</groupId>
+                <artifactId>tencentcloud-sdk-java</artifactId>
+                <version>${tencentcloud-sdk-java.version}</version>
+            </dependency>
+            <!--  jwt  -->
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>${java-jwt.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+        <plugins>
+            <!-- Java 编译 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

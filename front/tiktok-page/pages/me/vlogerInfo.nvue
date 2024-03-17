@@ -1,0 +1,728 @@
+<template>
+  <view class="page">
+    <scroll-view
+      class="isLogin-info-wrapper"
+      :style="{ height: screenHeight + 'px' }"
+      scroll-y="true"
+      @scrolltolower="loadMore">
+      <image class="mybg" :src="pageUserInfo.bgImg" mode="aspectFill" />
+
+      <!-- 安卓下使用一个灰色图片来替代阴影效果, ios支持阴影, 安卓则不支持 -->
+      <image
+        v-if="isAndroid"
+        :src="pageUserInfo.bgImg"
+        mode="aspectFill"
+        style="width: 750rpx; height: 750rpx; opacity: 0.5" />
+
+      <view class="header" :style="{ marginTop: statusBarHeight + 'px' }">
+        <image
+          class="header-right-search"
+          src="../../static/images/icon-back.png"
+          @click="back()" />
+      </view>
+      <view class="my-info-wrapper">
+        <view class="my-info">
+          <image :src="pageUserInfo.face" mode="aspectFill" class="my-face" />
+          <view class="info-wrapper">
+            <text class="nickname">
+              {{ pageUserInfo.nickname }}
+            </text>
+            <view class="tiktok-num-wrapper">
+              <text class="tiktok-num">视频号：</text>
+              <text class="tiktok-num">
+                {{ pageUserInfo.tiktokNum }}
+              </text>
+            </view>
+            <view class="location">
+              <text class="location-text">所在地：</text>
+              <text class="location-text">
+                {{ pageUserInfo.city == "" ? "中国" : "" + pageUserInfo.city
+                }}{{
+                  pageUserInfo.district == "" ? "" : "·" + pageUserInfo.district
+                }}
+              </text>
+            </view>
+            <view class="sex-wrapper">
+              <view class="constellation">
+                <image
+                  class="sex-img"
+                  v-if="pageUserInfo.sex == 1"
+                  src="../../static/images/icon-sex-boy.png" />
+                <image
+                  class="sex-img"
+                  v-if="pageUserInfo.sex == 0"
+                  src="../../static/images/icon-sex-girl.png" />
+                <image
+                  class="sex-img"
+                  v-if="pageUserInfo.sex == 2"
+                  src="../../static/images/icon-sex-secret.png" />
+                <text class="astro">{{ astro }}座</text>
+              </view>
+              <view class="animal">
+                <text class="animal-text">
+                  {{ animal }}
+                </text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <text class="desc">
+        {{ pageUserInfo.description }}
+      </text>
+
+      <view class="bottom-wrapper">
+        <view class="bottom">
+          <view class="bottom-item" @click="goMyFollows(pageUserInfo.id)">
+            <text class="item-num">
+              {{ getGraceNumber(pageUserInfo.myFollowsCounts) }}
+            </text>
+            <text class="item-text">关注</text>
+          </view>
+          <view class="bottom-item" @click="goMyFans(pageUserInfo.id)">
+            <text class="item-num">
+              {{ getGraceNumber(pageUserInfo.myFansCounts) }}
+            </text>
+            <text class="item-text">粉丝</text>
+          </view>
+          <view class="bottom-item">
+            <text class="item-num">
+              {{ getGraceNumber(pageUserInfo.totalLikeMeCounts) }}
+            </text>
+            <text class="item-text">获赞</text>
+          </view>
+        </view>
+
+        <view class="edit">
+          <view
+            v-if="isFollow && !isFan"
+            @click="cancelFollow()"
+            class="follow-btn">
+            <text class="follow-text">已关注</text>
+          </view>
+          <view
+            v-if="isFollow && isFan"
+            @click="cancelFollow()"
+            class="follow-btn">
+            <text class="follow-text">相互关注</text>
+          </view>
+          <view
+            v-if="!isFollow"
+            @click="followMe()"
+            class="follow-btn"
+            style="background-color: #ef274d">
+            <text class="follow-text">关注我</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-wrapper">
+        <view class="tab-item" @click="switchTab(0)">
+          <text class="tab-normal" :class="{ 'tab-selected': currentTab == 0 }">
+            作品
+          </text>
+          <view v-if="currentTab == 0" class="selected-tab"></view>
+        </view>
+        <view class="tab-item" @click="switchTab(1)">
+          <text class="tab-normal" :class="{ 'tab-selected': currentTab == 1 }">
+            私密
+          </text>
+          <view v-if="currentTab == 1" class="selected-tab"></view>
+        </view>
+        <view class="tab-item" @click="switchTab(2)">
+          <text class="tab-normal" :class="{ 'tab-selected': currentTab == 2 }">
+            赞过
+          </text>
+          <view v-if="currentTab == 2" class="selected-tab"></view>
+        </view>
+      </view>
+
+      <view class="vlog-list">
+        <block v-for="(vlog, index) in vlogList" :key="index">
+          <image
+            class="vlog-cover"
+            :src="vlog.cover"
+            @click="goToVlog(vlog)"
+            mode="aspectFill"></image>
+        </block>
+      </view>
+
+      <view v-if="vlogList.length == 0" class="empty">
+        <text class="empty-text">~ 空空如也 ~</text>
+      </view>
+
+      <view v-if="vlogList.length > 0" class="not-empty">
+        <text class="not-empty-text">~ 没有更多了 ~</text>
+      </view>
+    </scroll-view>
+  </view>
+</template>
+
+<script>
+let system = uni.getSystemInfoSync();
+const app = getApp();
+export default {
+  data() {
+    return {
+      pageUserInfo: {},
+      userPageId: "",
+      astro: "",
+      animal: "",
+      loginWords: "请登录",
+
+      statusBarHeight: 0,
+      screenHeight: 0,
+      screenHeightUnLogin: 0,
+
+      currentTab: 0,
+      isFollow: false,
+      isFan: false,
+      isAndroid: uni.getSystemInfoSync().platform == "android",
+
+      page: 0,
+      totalpage: 0,
+      vlogList: [],
+    };
+  },
+  onLoad(params) {
+    this.statusBarHeight = system.statusBarHeight;
+    let screenHeight = system.safeArea.bottom + 50;
+    this.screenHeight = screenHeight;
+    let screenHeightUnLogin = system.safeArea.bottom;
+    this.screenHeightUnLogin = screenHeightUnLogin;
+    let me = this;
+
+    // 从视频页面, 点击用户头像传递过来的id
+    let userPageId = params.userPageId;
+    if (app.isStrEmpty(userPageId)) {
+      uni.showToast({
+        title: "出错啦~",
+        icon: " none",
+        duration: 2000,
+      });
+      settimeout(() => {
+        uni.navigateBack({
+          delta: 1,
+        });
+      }, 1500);
+    }
+
+    me.userPageId = userPageId;
+    let serverUrl = app.globalData.serverUrl;
+
+    // 查询用户信息
+    uni.request({
+      method: "GET",
+      url: serverUrl + "/userInfo/query?userId=" + userPageId,
+      success(result) {
+        if (result.data.status == 200) {
+          me.pageUserInfo = result.data.data;
+          me.setBasicUserInfo(me.pageUserInfo);
+        } else {
+          uni.showToast({
+            title: result.data.msg,
+            icon: "none",
+            duration: 3000,
+          });
+        }
+      },
+    });
+    this.switchTab(0);
+    let myUserId = "";
+    if (!app.isStrEmpty(app.getUserInfoSession())) {
+      myUserId = app.getUserInfoSession().id;
+    }
+
+    if (!app.isStrEmpty(myUserId)) {
+      // 查询用户是否关注博主
+      uni.request({
+        method: "GET",
+        header: {
+          headerUserId: myUserId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url:
+          serverUrl +
+          "/fans/queryRelationship?myId=" +
+          myUserId +
+          "&vlogerId=" +
+          userPageId,
+        success(result) {
+          if (result.data.status == 200) {
+            me.isFollow = result.data.data.follow;
+            me.isFan = result.data.data.fan;
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    }
+  },
+  methods: {
+    setBasicUserInfo(myUserInfo) {
+      if (app.isStrEmpty(myUserInfo.bgImg)) {
+        myUserInfo.bgImg = "http://120.26.164.63:9000/tiktok/IMG_4566.HEIC";
+      }
+      if (app.isStrEmpty(myUserInfo.face)) {
+        myUserInfo.face = "http://120.26.164.63:9000/tiktok/IMG_4845.JPG";
+      }
+      // 根据生日判断星座
+      let birthday = myUserInfo.birthday;
+      let birth = app.dateFormat("YYYY-mm-dd", new Date(birthday));
+      let birthArr = birth.split("-");
+      let year = birthArr[0];
+      let month = birthArr[1];
+      let day = birthArr[2];
+      let astro = app.getAstro(month, day);
+      this.astro = astro;
+
+      // 根据生日判断生肖
+      let animal = app.getAnimal(year);
+      this.animal = animal;
+    },
+    switchTab(index) {
+      this.currentTab = index;
+      if (index == 0) {
+        this.vlogList = [];
+        this.page = 0;
+        this.toalPage = 0;
+        this.type = 0;
+        this.myList(0);
+      } else if (index == 1) {
+        this.vlogList = [];
+      } else if (index == 2) {
+        this.vlogList = [];
+        this.page = 0;
+        this.toalPage = 0;
+        this.type = 2;
+        this.myList(0);
+      }
+    },
+    loadMore() {
+      if (this.page >= this.toalPage) {
+        return;
+      } else {
+        this.myList(this.page);
+      }
+    },
+    myList(page) {
+      let me = this;
+      page = page + 1;
+      me.page = page;
+      let vlogerId = me.userPageId;
+      let serverUrl = app.globalData.serverUrl;
+      let type = me.type;
+      uni.request({
+        method: "GET",
+        url:
+          serverUrl +
+          "/vlog/myList/?userId=" +
+          vlogerId +
+          "&type=" +
+          type +
+          "&page=" +
+          page +
+          "&pageSize=10",
+        success(result) {
+          if (result.data.status == 206) {
+            let vlogList = result.data.data.rows;
+            let toalPage = result.data.data.total;
+            me.vlogList = me.vlogList.concat(vlogList);
+            me.page = page;
+            me.toalPage = toalPage;
+          }
+        },
+      });
+    },
+    back() {
+      uni.navigateBack({
+        delta: 1,
+      });
+    },
+    cancelFollow() {
+      let me = this;
+      let vlogerId = me.userPageId;
+      let userId = getApp().getUserInfoSession().id;
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url:
+          serverUrl + "/fans/cancel?myId=" + userId + "&vlogerId=" + vlogerId,
+        success(result) {
+          if (result.data.status == 209) {
+            me.isFollow = false;
+            uni.setStorageSync("justCancelVlogerId", vlogerId);
+
+            // 刷新当前页的粉丝数
+            let pendingInfo = me.pageUserInfo;
+            me.pageUserInfo.myFansCounts = pendingInfo.myFansCounts - 1;
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+    followMe() {
+      let me = this;
+      let myUserInfo = getApp().getUserInfoSession();
+      if (app.isStrEmpty(myUserInfo)) {
+        uni.showToast({
+          duration: 3000,
+          title: "请登录后再进行操作~",
+          icon: "none",
+        });
+
+        uni.switchTab({
+          url: "me",
+        });
+
+        uni.navigateTo({
+          url: "../loginRegist/loginRegist",
+          animationType: "slide-in-bottom",
+          success() {
+            me.loginWords = "请登录";
+          },
+        });
+        return;
+      }
+
+      let vlogerId = me.userPageId;
+      let userId = myUserInfo.id;
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url:
+          serverUrl + "/fans/follow?myId=" + userId + "&vlogerId=" + vlogerId,
+        success(result) {
+          if (result.data.status == 208) {
+            me.isFollow = true;
+            uni.setStorageSync("justFollowVlogerId", vlogerId);
+
+            // 刷新当前页的粉丝数
+            let pendingInfo = me.pageUserInfo;
+            me.pageUserInfo.myFansCounts = pendingInfo.myFansCounts + 1;
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+
+    // 把超过1000或10000的数字调整, 比如1.3k/6.8w
+    getGraceNumber(num) {
+      return getApp().graceNumber(num);
+    },
+
+    goToVlog(vlog) {
+      let vlogId = vlog.id ? vlog.id : vlog.vlogId;
+      uni.navigateTo({
+        url: "../vlog/vlog?type=mine&isNeedPage=1&vlogId=" + vlogId,
+      });
+    },
+    goMyFans(userId) {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "myFans?userId=" + userId,
+      });
+    },
+
+    goMyFollows(userId) {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "myFollows?userId=" + userId,
+      });
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #000000;
+
+  .isLogin-info-wrapper {
+    .header {
+      position: absolute;
+      left: 0;
+      right: 0;
+      flex-direction: row;
+      height: 100rpx;
+      line-height: 100rpx;
+      align-items: center;
+      padding-left: 40rpx;
+      padding-right: 40rpx;
+      .header-right-search {
+        width: 40rpx;
+        height: 40rpx;
+        opacity: 0.8;
+      }
+    }
+    .mybg {
+      width: 750rpx;
+      height: 750rpx;
+      box-shadow: inset 0 -150px 180px #313030;
+    }
+
+    .my-info-wrapper {
+      position: relative;
+      left: 30rpx;
+      top: -560rpx;
+      display: flex;
+      flex-direction: column;
+      width: 1000rpx;
+      .my-info {
+        display: flex;
+        flex-direction: row;
+        .my-face {
+          width: 200rpx;
+          height: 200rpx;
+          border-radius: 100rpx;
+          border-width: 1px;
+          border-color: #f1f1f1;
+        }
+        .info-wrapper {
+          margin-left: 30rpx;
+          padding-top: 20rpx;
+          width: 500rpx;
+          .nickname {
+            font-size: 20px;
+            color: #ffffff;
+            font-weight: 600;
+          }
+          .tiktok-num-wrapper {
+            display: flex;
+            flex-direction: row;
+            .tiktok-num {
+              font-size: 10px;
+              color: #ffffff;
+              font-weight: 300;
+            }
+          }
+          .location {
+            display: flex;
+            flex-direction: row;
+            height: 20px;
+            margin-top: 2px;
+            font-size: 1px;
+            .location-text {
+              line-height: 20px;
+              color: #ffffff;
+              font-size: 10px;
+              font-weight: 300;
+            }
+          }
+          .sex-wrapper {
+            display: flex;
+            flex-direction: row;
+            margin-top: 10rpx;
+            .constellation {
+              display: flex;
+              flex-direction: row;
+              justify-content: center;
+              background-color: #000000;
+              opacity: 0.5;
+              width: 130rpx;
+              height: 40rpx;
+              border-radius: 10px;
+              .sex-img {
+                width: 22rpx;
+                height: 22rpx;
+                align-self: center;
+              }
+              .astro {
+                font-size: 10px;
+                color: #ffffff;
+                line-height: 20px;
+                font-weight: bold;
+                margin-left: 6rpx;
+                align-self: center;
+              }
+            }
+            .animal {
+              margin-left: 10rpx;
+              display: flex;
+              flex-direction: row;
+              justify-content: center;
+              background-color: #000000;
+              opacity: 0.5;
+              width: 60rpx;
+              height: 40rpx;
+              border-radius: 10px;
+              .animal-text {
+                font-size: 10px;
+                color: #ffffff;
+                line-height: 20px;
+                font-weight: bold;
+                align-self: center;
+              }
+            }
+          }
+        }
+      }
+    }
+    .desc {
+      position: relative;
+      top: -520rpx;
+      color: #ffffff;
+      font-size: 14px;
+      margin: 0 30rpx;
+    }
+
+    .bottom-wrapper {
+      position: relative;
+      top: -510rpx;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      .bottom {
+        display: flex;
+        flex-direction: row;
+        .bottom-item {
+          margin-left: 30rpx;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          .item-num {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            align-self: center;
+          }
+          .item-text {
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 300;
+            align-self: center;
+          }
+        }
+      }
+      .edit {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        margin-right: 30rpx;
+        .follow-btn {
+          margin-right: 20rpx;
+          border-width: 1px;
+          border-color: #ffffff;
+          width: 200rpx;
+          height: 66rpx;
+          background-color: #545456;
+          opacity: 0.8;
+          border-radius: 40rpx;
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-self: center;
+          .follow-text {
+            font-size: 13px;
+            color: #ffffff;
+            font-weight: 500;
+            align-self: center;
+          }
+        }
+      }
+    }
+    .tab-wrapper {
+      position: relative;
+      top: -480rpx;
+      height: 40px;
+      background-color: #171825;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      padding-top: 3px;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      .tab-item {
+        width: 250rpx;
+        align-self: center;
+        .tab-normal {
+          font-size: 18px;
+          font-weight: 500;
+          align-self: center;
+          color: #808080;
+        }
+        .tab-selected {
+          color: #ffffff;
+        }
+        .selected-tab {
+          margin-top: 5px;
+          height: 5rpx;
+          width: 250rpx;
+          border-radius: 6rpx;
+          background-color: #ef274d;
+        }
+      }
+    }
+    .vlog-list {
+      position: relative;
+      top: -480rpx;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      background-color: #000000;
+      .vlog-cover {
+        align-self: center;
+        width: 248rpx;
+        height: 360rpx;
+        border-width: 1rpx;
+      }
+    }
+    .empty {
+      background-color: #000000;
+      width: 750rpx;
+      height: 300rpx;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      position: relative;
+      top: -480rpx;
+      .empty-text {
+        color: #ffffff;
+        font-size: 14px;
+        margin-top: 200rpx;
+      }
+    }
+
+    .not-empty {
+      width: 750rpx;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      position: relative;
+      top: -260rpx;
+      .not-empty-text {
+        color: #ffffff;
+        font-size: 14px;
+      }
+    }
+  }
+}
+</style>

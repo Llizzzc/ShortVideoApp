@@ -1,0 +1,228 @@
+<template>
+  <view class="page">
+    <view class="line"></view>
+    <view class="limit-wrapper" v-if="!canIModify">
+      <text class="tips-limit">👉🏻 修改次数已达上限！</text>
+    </view>
+    <view class="single-line-box">
+      <input
+        class="imoocNum-input"
+        type="text"
+        :value="tiktokNum"
+        :model="tiktokNum"
+        placeholder="请填入漂亮的视频号~"
+        maxlength="16"
+        :disabled="!canIModify"
+        @input="typingContent" />
+      <view class="length-cal">
+        <text class="length-text">{{ wordsLength }}/16</text>
+      </view>
+    </view>
+    <view class="notice">
+      <text class="tips">
+        *注：请设置5-16的视频号长度，视频号只能修改一次噢~！！！
+      </text>
+    </view>
+  </view>
+</template>
+
+<script>
+let app = getApp();
+export default {
+  data() {
+    return {
+      oldTiktokNum: app.getUserInfoSession().tiktokNum,
+      tiktokNum: app.getUserInfoSession().tiktokNum,
+      wordsLength: 0,
+      canIModify: false, // 用于判断是否可以修改视频号，每个人仅限修改一次
+    };
+  },
+  onNavigationBarButtonTap() {
+    let tiktokNum = this.tiktokNum;
+    if (tiktokNum.length < 5) {
+      uni.showToast({
+        icon: "none",
+        title: "视频号过短!",
+      });
+      return;
+    }
+
+    if (tiktokNum.search(/\s/) != -1) {
+      uni.showToast({
+        icon: "none",
+        title: "不允许包含空串!",
+      });
+      return;
+    }
+
+    let oldTiktokNum = this.oldTiktokNum;
+    if (oldTiktokNum == tiktokNum) {
+      uni.showToast({
+        icon: "none",
+        title: "视频号未改变!",
+      });
+      return;
+    }
+
+    let canIModify = this.canIModify;
+    if (canIModify == false) {
+      uni.showToast({
+        icon: "none",
+        title: "修改次数已达上限!",
+      });
+      return;
+    }
+    this.updateIMoocNum();
+  },
+  onLoad() {
+    this.canIModify = getApp().getUserInfoSession().canTiktokNumBeUpdated == 1;
+    // 导航栏按钮隐藏
+    if (!this.canIModify) {
+      let pages = getCurrentPages();
+      let page = pages[pages.length - 1];
+      let currentWebview = page.$getAppWebview();
+      currentWebview.setTitleNViewButtonStyle(0, {
+        text: "0",
+        width: 0,
+      });
+    }
+  },
+  onShow() {
+    this.wordsLength = this.tiktokNum.length;
+  },
+  methods: {
+    updateIMoocNum() {
+      let me = this;
+      let userId = getApp().getUserInfoSession().id;
+      let tiktokNum = this.tiktokNum;
+
+      // 后端还是需要校验能否修改, 因为用户可以绕过前端直接请求后端接口
+      let pendingUserInfo = {
+        id: userId,
+        tiktokNum: tiktokNum,
+      };
+
+      // 修改慕课号
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url: serverUrl + "/userInfo/modifyUserInfo?type=2",
+        data: pendingUserInfo,
+        success(result) {
+          if (result.data.status == 212) {
+            let userInfoUpdated = result.data.data;
+            // 重置本地用户信息
+            app.setUserInfoSession(userInfoUpdated);
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+            setTimeout(() => {
+              uni.navigateBack({
+                delta: 1,
+                animationType: "fade-out",
+              });
+            }, 1000);
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+    typingContent(e) {
+      this.tiktokNum = e.detail.value;
+      this.wordsLength = this.tiktokNum.length;
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  .line {
+    height: 1rpx;
+    background-color: #393a41;
+    width: 750rpx;
+  }
+
+  .limit-wrapper {
+    align-self: center;
+    background-color: #333030;
+    height: 60rpx;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    .tips-limit {
+      font-size: 26rpx;
+      font-weight: 500;
+      color: #deb887;
+      width: 750rpx;
+      padding-left: 30rpx;
+    }
+  }
+
+  .single-line-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 30rpx;
+    margin-top: 5rpx;
+    .imoocNum-input {
+      padding-left: 20rpx;
+      color: #ffffff;
+      font-size: 28rpx;
+      width: 600rpx;
+      height: 100rpx;
+      background-color: #4a4c52;
+      border-top-left-radius: 20rpx;
+      border-bottom-left-radius: 20rpx;
+    }
+    .length-cal {
+      width: 100rpx;
+      height: 100rpx;
+      background-color: #4a4c52;
+      padding-right: 20rpx;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-bottom: 12rpx;
+      border-top-right-radius: 20rpx;
+      border-bottom-right-radius: 20rpx;
+      .length-text {
+        font-size: 24rpx;
+        font-weight: 400;
+        color: #f1f1f1;
+      }
+    }
+  }
+
+  .notice {
+    align-self: center;
+    .tips {
+      font-size: 24rpx;
+      font-weight: 400;
+      color: #bfbfbf;
+      width: 700rpx;
+    }
+  }
+}
+</style>

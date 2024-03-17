@@ -1,0 +1,242 @@
+<template>
+  <view class="page">
+    <view class="line"></view>
+    <view class="face-box">
+      <image
+        class="user-face"
+        mode="aspectFill"
+        @click="changeMyFace"
+        :src="myInfo.face"></image>
+    </view>
+    <view class="single-line-box">
+      <text class="left-lable">昵称</text>
+      <view class="right-part" @click="modifyNickname">
+        <text class="right-content">
+          {{ myInfo.nickname }}
+        </text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+
+    <view class="single-line-box" @click="modifyTiktokNum">
+      <text class="left-lable">视频号</text>
+      <view class="right-part">
+        <text class="right-content">
+          {{ myInfo.tiktokNum }}
+        </text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+
+    <view class="single-line-box">
+      <text class="left-lable">性别</text>
+      <view class="right-part" @click="modifySex">
+        <text v-if="myInfo.sex == 1" class="right-content">男</text>
+        <text v-else-if="myInfo.sex == 0" class="right-content">女</text>
+        <text v-else class="right-content">保密</text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+
+    <view class="single-line-box">
+      <text class="left-lable">生日</text>
+      <view class="right-part" @click="modifyBirthday">
+        <text class="right-content">
+          {{ getGraceDateStr(new Date(myInfo.birthday)) }}
+        </text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+
+    <view class="single-line-box">
+      <text class="left-lable">所在地</text>
+      <view class="right-part" @click="modifyLocation">
+        <text class="right-content">
+          {{ myInfo.province == myInfo.city ? "" : myInfo.province + "·"
+          }}{{ myInfo.city == "" ? "" : myInfo.city
+          }}{{ myInfo.district == "" ? "" : "·" + myInfo.district }}
+        </text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+
+    <view class="single-line-box">
+      <text class="left-lable">简介</text>
+      <view class="right-part" @click="modifyDescription">
+        <text class="right-content">
+          {{ myInfo.description }}
+        </text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+    <view class="single-line-box">
+      <text class="left-lable">修改密码</text>
+      <view class="right-part" @click="modifyPassword">
+        <text class="right-content">我猜你忘记密码了~</text>
+        <image
+          class="right-arrow"
+          src="/static/images/icon-right-arrow2.png"></image>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+const app = getApp();
+export default {
+  data() {
+    return {
+      myInfo: {},
+    };
+  },
+  onShow() {
+    let myInfo = getApp().getUserInfoSession();
+    if (app.isStrEmpty(myInfo.face)) {
+      myInfo.face = "http://120.26.164.63:9000/tiktok/IMG_4845.JPG";
+    }
+    this.myInfo = myInfo;
+  },
+  methods: {
+    getGraceDateStr(date) {
+      return app.dateFormat("YYYY-mm-dd", date);
+    },
+    // 更换头像
+    changeMyFace() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "myFace",
+      });
+    },
+
+    // 修改昵称
+    modifyNickname() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifyNickname",
+      });
+    },
+
+    // 修改慕课号
+    modifyTiktokNum() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifyTioktokNum",
+      });
+    },
+
+    // 修改性别
+    modifySex() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifySex",
+      });
+    },
+
+    // 修改生日
+    modifyBirthday() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifyBirthday",
+      });
+    },
+
+    // 修改所在地
+    modifyLocation() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifyLocation",
+      });
+    },
+
+    // 修改简介
+    modifyDescription() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifyDesc",
+      });
+    },
+
+    // 修改密码
+    modifyPassword() {
+      uni.navigateTo({
+        animationType: "fade-in",
+        url: "modifyPass",
+      });
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+
+  .line {
+    height: 1rpx;
+    background-color: #393a41;
+    width: 750rpx;
+  }
+
+  .face-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 80rpx;
+    margin-bottom: 80rpx;
+    .user-face {
+      width: 200rpx;
+      height: 200rpx;
+      border-radius: 100rpx;
+      border-width: 2rpx;
+      border-color: #f1f1f1;
+    }
+  }
+
+  .single-line-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 30rpx;
+    .left-lable {
+      align-self: center;
+      color: #ffffff;
+      font-size: 30rpx;
+      font-weight: 500;
+    }
+    .right-part {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      .right-content {
+        align-self: center;
+        color: #bfbfbf;
+        font-size: 30rpx;
+        font-weight: 300;
+      }
+      .right-arrow {
+        align-self: center;
+        width: 32rpx;
+        height: 32rpx;
+        margin-left: 20rpx;
+      }
+    }
+  }
+}
+</style>

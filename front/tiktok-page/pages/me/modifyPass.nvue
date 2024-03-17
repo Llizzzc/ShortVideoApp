@@ -1,0 +1,237 @@
+<template>
+  <view class="page">
+    <view class="line"></view>
+    <view class="single-line-box">
+      <input
+        class="password-input"
+        type="password"
+        :value="password"
+        :model="password"
+        placeholder="请输入原密码～"
+        maxlength="16"
+        @input="typingContent" />
+      <view class="length-cal">
+        <text class="length-text">{{ wordsLength }}/16</text>
+      </view>
+    </view>
+    <view class="single-line-box">
+      <input
+        class="newpassword-input"
+        type="password"
+        :value="newPassword"
+        :model="newPassword"
+        placeholder="请输入新密码～"
+        maxlength="16"
+        @input="typingNewPass" />
+      <view class="length-cal">
+        <text class="length-text">{{ newPassLength }}/16</text>
+      </view>
+    </view>
+    <view class="single-line-box">
+      <input
+        class="againpassword-input"
+        type="password"
+        :value="newPassAgain"
+        :model="newPassAgain"
+        placeholder="再次输入新密码～"
+        maxlength="16"
+        @input="typingNewPassAgain" />
+      <view class="length-cal">
+        <text class="length-text">{{ newPassAgainLength }}/16</text>
+      </view>
+    </view>
+    <view class="notice">
+      <text class="tips">*注：默认密码为注册使用的手机号，请及时修改！</text>
+    </view>
+  </view>
+</template>
+
+<script>
+let app = getApp();
+export default {
+  data() {
+    return {
+      password: "",
+      newPassword: "",
+      newPassAgain: "",
+      wordsLength: 0,
+      newPassLength: 0,
+      newPassAgainLength: 0,
+    };
+  },
+  onNavigationBarButtonTap() {
+    if (
+      app.isStrEmpty(this.password) ||
+      app.isStrEmpty(this.newPassword) ||
+      app.isStrEmpty(this.newPassAgain)
+    ) {
+      uni.showToast({
+        icon: "none",
+        title: "请勿输入空密码!",
+      });
+      return;
+    }
+
+    if (
+      this.password.search(/\s/) != -1 ||
+      this.newPassword.search(/\s/) != -1 ||
+      this.newPassAgain.search(/\s/) != -1
+    ) {
+      uni.showToast({
+        icon: "none",
+        title: "不允许包含空串!",
+      });
+      return;
+    }
+
+    if (
+      this.password.length < 5 ||
+      this.newPassword.length < 5 ||
+      this.newPassAgain.length < 5
+    ) {
+      uni.showToast({
+        icon: "none",
+        title: "密码长度为5~16位!",
+      });
+      return;
+    }
+
+    if (this.newPassword != this.newPassAgain) {
+      uni.showToast({
+        icon: "none",
+        title: "两次输入密码不同!",
+      });
+      return;
+    }
+    this.updatePassword();
+  },
+  onShow() {},
+  methods: {
+    updatePassword() {
+      let me = this;
+      let userId = getApp().getUserInfoSession().id;
+      let pendingUserInfo = {
+        id: userId,
+        password: me.password,
+        newPassword: me.newPassword,
+      };
+
+      // 修改密码
+      let serverUrl = app.globalData.serverUrl;
+      uni.request({
+        method: "POST",
+        header: {
+          headerUserId: userId,
+          headerUserToken: app.getUserSessionToken(),
+        },
+        url: serverUrl + "/userInfo/modifyUserInfo?type=7",
+        data: pendingUserInfo,
+        success(result) {
+          if (result.data.status == 212) {
+            let userInfoUpdated = result.data.data;
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+            setTimeout(() => {
+              uni.navigateBack({
+                delta: 1,
+                animationType: "fade-out",
+              });
+            }, 1000);
+          } else {
+            uni.showToast({
+              title: result.data.msg,
+              icon: "none",
+              duration: 3000,
+            });
+          }
+        },
+      });
+    },
+    typingContent(e) {
+      this.password = e.detail.value;
+      this.wordsLength = this.password.length;
+    },
+    typingNewPass(e) {
+      this.newPassword = e.detail.value;
+      this.newPassLength = this.newPassword.length;
+    },
+    typingNewPassAgain(e) {
+      this.newPassAgain = e.detail.value;
+      this.newPassAgainLength = this.newPassAgain.length;
+    },
+  },
+};
+</script>
+
+<style lang="scss">
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #181b27;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  .line {
+    height: 1rpx;
+    background-color: #393a41;
+    width: 750rpx;
+  }
+
+  .single-line-box {
+    margin-top: 7rpx;
+    align-self: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 5rpx;
+    .password-input,
+    .newpassword-input,
+    .againpassword-input {
+      padding-left: 10px;
+      color: #ffffff;
+      font-size: 28rpx;
+      width: 600rpx;
+      height: 100rpx;
+      background-color: #4a4c52;
+      border-top-left-radius: 40rpx;
+      border-bottom-left-radius: 40rpx;
+    }
+
+    .length-cal {
+      width: 100rpx;
+      height: 100rpx;
+      background-color: #4a4c52;
+      padding-right: 20rpx;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding-bottom: 12rpx;
+      border-top-right-radius: 40rpx;
+      border-bottom-right-radius: 40rpx;
+      .length-text {
+        font-size: 24rpx;
+        font-weight: 400;
+        color: #f1f1f1;
+      }
+    }
+  }
+
+  .notice {
+    align-self: center;
+    margin-left: 20rpx;
+    .tips {
+      font-size: 24rpx;
+      font-weight: 400;
+      color: #bfbfbf;
+      width: 700rpx;
+    }
+  }
+}
+</style>
